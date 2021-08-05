@@ -1,5 +1,7 @@
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
- 
+import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+
 var camera, scene, renderer, plane, orbitControls;
 
 
@@ -10,8 +12,8 @@ function init() {
 
     camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(-180, 250, -150);
-    
-    let dirlight = new THREE.DirectionalLight(0xFFF000, 1);
+
+    let dirlight = new THREE.DirectionalLight(0xFFFFF0, 1);
     dirlight.position.set(20, 100, 10);
     dirlight.target.position.set(0, 0, 0);
     dirlight.castShadow = true;
@@ -27,28 +29,35 @@ function init() {
     dirlight.shadow.camera.bottom = -100;
 
     scene.add(dirlight);
-    
-    // var ambientLight = new THREE.AmbientLight(0xFFFF00, 3);
-    // scene.add(ambientLight);
-    
-    // // let hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0x080820, 4);
-    // let hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.1);
-    // hemiLight.color.setHSL(0.6, 0.6, 0.6);
-    // hemiLight.groundColor.setHSL(0.1, 1, 0.4);
-    // hemiLight.position.set(0, 50, 0);
-    // scene.add(hemiLight);
-    
-    
-    // plane = new THREE.Mesh(new THREE.PlaneGeometry(15000, 15000, 300, 300),
-    //     new THREE.MeshBasicMaterial({ color: 0xa0afa4, wireframe:true }));
-    //     plane.rotation.x = (-Math.PI / 2);
-    // scene.add(plane);
-    
-    
+
+    var ambientLight = new THREE.AmbientLight(0xFFFFF0, 3);
+    scene.add(ambientLight);
+
+    // let hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0x080820, 4);
+    let hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.1);
+    hemiLight.color.setHSL(0.6, 0.6, 0.6);
+    hemiLight.groundColor.setHSL(0.1, 1, 0.4);
+    hemiLight.position.set(0, 50, 0);
+    scene.add(hemiLight);
+
+
     const gridHelper = new THREE.GridHelper(15000, 100);
     gridHelper.background = new THREE.Color(0xa0afa4);
     scene.add(gridHelper);
-    
+
+    // const ybot;
+    let ybotLoader = new FBXLoader();
+    ybotLoader.load('./CharacterResources/idle.fbx', (fbx) => {
+        fbx.scale.setScalar(1);
+        fbx.position.set(0, 0, 0);
+        fbx.traverse(c => {
+            c.castShadow = true;
+            c.receiveShadow = false;
+        });
+
+        scene.add(fbx);
+    })
+
     renderer = new THREE.WebGLRenderer({ antialiasing: true });
     renderer.toneMapping = THREE.ReinhardToneMapping;
     renderer.toneMappingExposure = 2.3;
