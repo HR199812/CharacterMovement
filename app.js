@@ -47,7 +47,7 @@ function init() {
 
     // const ybot;
     let ybotLoader = new FBXLoader();
-    ybotLoader.load('./CharacterResources/idle.fbx', (fbx) => {
+    ybotLoader.load('./CharacterResources/Breathing Idle.fbx', (fbx) => {
  
         fbx.scale.setScalar(1);
         const mixer = new THREE.AnimationMixer(fbx);
