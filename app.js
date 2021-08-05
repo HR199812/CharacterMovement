@@ -2,7 +2,16 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, renderer, plane, orbitControls, actions = [];;
+var camera, scene, renderer, plane, orbitControls, actions = [];
+
+var characteranimations = {
+    idle: true,
+    run: false,
+    walk: false,
+    jump: false,
+    punch: false,
+    dance: false
+}
 
 
 function init() {
@@ -45,23 +54,8 @@ function init() {
     gridHelper.background = new THREE.Color(0xa0afa4);
     scene.add(gridHelper);
 
-    // const ybot;
-    let ybotLoader = new FBXLoader();
-    ybotLoader.load('./CharacterResources/Breathing Idle.fbx', (fbx) => {
- 
-        fbx.scale.setScalar(1);
-        const mixer = new THREE.AnimationMixer(fbx);
-        mixer.clipAction(fbx.animations[0]).play();
-        actions.push({ fbx, mixer });
+    loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
 
-        fbx.position.set(0, 0, 0);
-        fbx.traverse(c => {
-            c.castShadow = true;
-            c.receiveShadow = false;
-        });
-
-        scene.add(fbx);
-    })
 
     renderer = new THREE.WebGLRenderer({ antialiasing: true });
     renderer.toneMapping = THREE.ReinhardToneMapping;
@@ -108,3 +102,60 @@ function onWindowResize() {
 }
 
 window.addEventListener('resize', onWindowResize);
+
+function loadBot(check, path) {
+    if (check) {
+
+        actions.pop();
+
+        let ybotLoader = new FBXLoader();
+        ybotLoader.load(path, (fbx) => {
+
+            fbx.scale.setScalar(1);
+            const mixer = new THREE.AnimationMixer(fbx);
+            mixer.clipAction(fbx.animations[0]).play();
+            actions.push({ fbx, mixer });
+
+            fbx.position.set(0, 0, 0);
+            fbx.traverse(c => {
+                c.castShadow = true;
+                c.receiveShadow = false;
+            });
+
+            scene.add(fbx);
+        })
+    }
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
+        characteranimations.idle = false;
+        characteranimations.walk = true;
+    }
+    if (e.key === 'q') {
+        characteranimations.idle = false;
+        characteranimations.dance = true;
+    }
+});
+window.addEventListener('keyup', (e) => {
+    if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
+        characteranimations.walk = false;
+        characteranimations.idle = true;
+    }
+    if (e.key === 'q') {
+        characteranimations.dance = false;
+        characteranimations.idle = true;
+    }
+});
+
+window.addEventListener('mousedown', (e) => {
+    characteranimations.idle = false;
+    characteranimations.punch = true;
+    loadBot(characteranimations.punch, './CharacterResources/Boxing.fbx');
+    
+});
+window.addEventListener('mouseup', (e) => {
+    characteranimations.punch = false;
+    characteranimations.idle = true;
+    loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
+});
