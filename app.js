@@ -2,7 +2,7 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, renderer, plane, orbitControls;
+var camera, scene, renderer, plane, orbitControls, actions = [];;
 
 
 function init() {
@@ -13,7 +13,7 @@ function init() {
     camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(-180, 250, -150);
 
-    let dirlight = new THREE.DirectionalLight(0xFFFFF0, 1);
+    let dirlight = new THREE.DirectionalLight(0xd3d3d3, 1);
     dirlight.position.set(20, 100, 10);
     dirlight.target.position.set(0, 0, 0);
     dirlight.castShadow = true;
@@ -30,11 +30,11 @@ function init() {
 
     scene.add(dirlight);
 
-    var ambientLight = new THREE.AmbientLight(0xFFFFF0, 3);
-    scene.add(ambientLight);
+    // var ambientLight = new THREE.AmbientLight(0xFFFFFF, 3);
+    // scene.add(ambientLight);
 
     // let hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0x080820, 4);
-    let hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.1);
+    let hemiLight = new THREE.HemisphereLight(0xd3d3d3, 0xFFFFFF, 1);
     hemiLight.color.setHSL(0.6, 0.6, 0.6);
     hemiLight.groundColor.setHSL(0.1, 1, 0.4);
     hemiLight.position.set(0, 50, 0);
@@ -48,7 +48,12 @@ function init() {
     // const ybot;
     let ybotLoader = new FBXLoader();
     ybotLoader.load('./CharacterResources/idle.fbx', (fbx) => {
+ 
         fbx.scale.setScalar(1);
+        const mixer = new THREE.AnimationMixer(fbx);
+        mixer.clipAction(fbx.animations[0]).play();
+        actions.push({ fbx, mixer });
+
         fbx.position.set(0, 0, 0);
         fbx.traverse(c => {
             c.castShadow = true;
@@ -81,7 +86,11 @@ function init() {
     animate();
 }
 
+const clock = new THREE.Clock();
+
 function animate() {
+
+    actions.forEach(({ mixer }) => { mixer.update(clock.getDelta()); });
 
     requestAnimationFrame(animate);
 
