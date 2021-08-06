@@ -4,6 +4,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 
 var camera, scene, renderer, skeleton, orbitControls, actions = [];
 
+var animationModels = ['Boxing.fbx', 'Breathing Idle.fbx', 'Jumping Up.fbx',
+'Running.fbx', 'Silly Dancing.fbx', 'Start Walking.fbx'];
+
 var characteranimations = {
     idle: true,
     run: false,
@@ -54,7 +57,55 @@ function init() {
     gridHelper.background = new THREE.Color(0xa0afa4);
     scene.add(gridHelper);
 
-    loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
+    // loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
+
+    let character = new FBXLoader();
+    character.load('./CharacterResources/ybot.fbx', (fbx) => {
+
+        // fbx.scale.setScalar(0.2);
+        fbx.traverse(c => {
+            c.castShadow = true;
+            c.receiveShadow = false;
+        });
+
+
+        const mixer = new THREE.AnimationMixer(fbx);
+
+        character.load('./CharacterResources/Breathing Idle.fbx', function (anim) {
+
+            mixer.clipAction(anim.animations[0]).play();;
+            actions.push({ anim, mixer });
+
+            anim.traverse(function (child) {
+
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = false;
+                }
+            });
+        });
+        
+
+        for(let i=0; i<animationModels.length; i++){
+
+            character.load(`./CharacterResources/${animationModels[i]}`, function (anim) {
+    
+                actions.push({ anim, mixer });
+    
+                anim.traverse(function (child) {
+    
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = false;
+                    }
+                });
+            });
+        }
+
+
+        scene.add(fbx);
+
+    });
 
 
     renderer = new THREE.WebGLRenderer({ antialiasing: true });
