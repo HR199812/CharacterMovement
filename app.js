@@ -193,7 +193,7 @@ window.addEventListener('keyup', (e) => {
 });
 
 window.addEventListener('mousedown', (e) => {
-    PlayNextAnimation(2);
+    PlayNextAnimation(1);
 });
 window.addEventListener('mouseup', (e) => {
 });
