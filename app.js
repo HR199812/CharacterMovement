@@ -2,10 +2,10 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, renderer, skeleton, orbitControls, actions = [];
+var camera, scene, renderer, skeleton, orbitControls, actions = [], mixer;
 
 var animationModels = ['Boxing.fbx', 'Breathing Idle.fbx', 'Jumping Up.fbx',
-'Running.fbx', 'Silly Dancing.fbx', 'Start Walking.fbx'];
+    'Running.fbx', 'Silly Dancing.fbx', 'Start Walking.fbx'];
 
 var characteranimations = {
     idle: true,
@@ -53,8 +53,16 @@ function init() {
     scene.add(hemiLight);
 
 
-    const gridHelper = new THREE.GridHelper(15000, 100);
-    gridHelper.background = new THREE.Color(0xa0afa4);
+    // Ground
+    const mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(15000, 15000),
+        new THREE.MeshPhongMaterial({ color: 0xFFFFFF, wireframe: false, depthWrite: false }));
+    mesh.rotation.x = - Math.PI / 2;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+
+    const gridHelper = new THREE.GridHelper(15000, 100, 0x000000, 0x000000);
+    gridHelper.material.opacity = 0.2;
+    gridHelper.material.transparent = true;
     scene.add(gridHelper);
 
     // loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
@@ -62,19 +70,19 @@ function init() {
     let character = new FBXLoader();
     character.load('./CharacterResources/ybot.fbx', (fbx) => {
 
-        // fbx.scale.setScalar(0.2);
         fbx.traverse(c => {
             c.castShadow = true;
             c.receiveShadow = false;
         });
 
 
-        const mixer = new THREE.AnimationMixer(fbx);
+        mixer = new THREE.AnimationMixer(fbx);
 
         character.load('./CharacterResources/Breathing Idle.fbx', function (anim) {
 
             mixer.clipAction(anim.animations[0]).play();;
             actions.push({ anim, mixer });
+
 
             anim.traverse(function (child) {
 
@@ -84,16 +92,19 @@ function init() {
                 }
             });
         });
-        
 
-        for(let i=0; i<animationModels.length; i++){
+
+        for (let i = 0; i < animationModels.length; i++) {
 
             character.load(`./CharacterResources/${animationModels[i]}`, function (anim) {
-    
+
+                mixer.clipAction(anim.animations[0]);
                 actions.push({ anim, mixer });
-    
+
+                console.log(actions)
+
                 anim.traverse(function (child) {
-    
+
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = false;
@@ -154,43 +165,72 @@ function onWindowResize() {
 
 window.addEventListener('resize', onWindowResize);
 
-function loadBot(check, path) {
-    if (check) {
+// function loadBot(check, path) {
+//     if (check) {
 
-        actions.pop();
+//         actions.pop();
 
-        let ybotLoader = new FBXLoader();
-        ybotLoader.load(path, (fbx) => {
+//         let ybotLoader = new FBXLoader();
+//         ybotLoader.load(path, (fbx) => {
 
-            skeleton = new THREE.SkeletonHelper(fbx);
-            skeleton.visible = true;
-            scene.add(skeleton);
+//             skeleton = new THREE.SkeletonHelper(fbx);
+//             skeleton.visible = true;
+//             scene.add(skeleton);
 
 
-            fbx.scale.setScalar(1);
-            const mixer = new THREE.AnimationMixer(fbx);
-            mixer.clipAction(fbx.animations[0]).play();
-            actions.push({ fbx, mixer });
+//             fbx.scale.setScalar(1);
+//             const mixer = new THREE.AnimationMixer(fbx);
+//             mixer.clipAction(fbx.animations[0]).play();
+//             actions.push({ fbx, mixer });
 
-            fbx.position.set(0, 0, 0);
-            fbx.traverse(c => {
-                c.castShadow = true;
-                c.receiveShadow = false;
-            });
+//             fbx.position.set(0, 0, 0);
+//             fbx.traverse(c => {
+//                 c.castShadow = true;
+//                 c.receiveShadow = false;
+//             });
 
-            scene.add(fbx);
-        })
-    }
+//             scene.add(fbx);
+//         })
+//     }
+// }
+
+
+function PlayNextAnimation(param) {
+    mixer.stopAllAction();
+    const action = actions[param];
+    mixer.weight = 1;
+    // mixer.fadein = 0.5;
+    mixer.clipAction(action["anim"].animations[0]).play();
+    // action.play();
 }
+
+// function backToIdleState(){
+//     mixer.stopAllAction();
+//     const action = actions[5];
+//     mixer.weight = 1;
+//     mixer.clipAction(action["anim"].animations[0]).play();
+// }
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
         characteranimations.idle = false;
         characteranimations.walk = true;
+        PlayNextAnimation(4);
     }
     if (e.key === 'q') {
+        PlayNextAnimation(3);
         characteranimations.idle = false;
         characteranimations.dance = true;
+    }
+    if (e.key === ' ') {
+        characteranimations.idle = false;
+        characteranimations.jump = true;
+        PlayNextAnimation(0);
+    }
+    if (e.key === 'shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
+        characteranimations.idle = false;
+        characteranimations.jump = true;
+        PlayNextAnimation(1);
     }
 });
 window.addEventListener('keyup', (e) => {
@@ -207,11 +247,8 @@ window.addEventListener('keyup', (e) => {
 window.addEventListener('mousedown', (e) => {
     characteranimations.idle = false;
     characteranimations.punch = true;
-    // loadBot(characteranimations.punch, './CharacterResources/Boxing.fbx');
-
 });
 window.addEventListener('mouseup', (e) => {
     characteranimations.punch = false;
     characteranimations.idle = true;
-    // loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
 });
