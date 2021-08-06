@@ -2,10 +2,11 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, renderer, skeleton, orbitControls, actions = [], mixer;
+var camera, scene, renderer, skeleton, orbitControls, actions = [], mixer ,idle;
 
 var animationModels = ['Boxing.fbx', 'Breathing Idle.fbx', 'Jump.fbx',
     'Running.fbx', 'Silly Dancing.fbx', 'Start Walking.fbx'];
+var clipActionModel = [];
 
 function init() {
 
@@ -59,21 +60,23 @@ function init() {
     character.load('./CharacterResources/ybot.fbx', (fbx) => {
 
         mixer = new THREE.AnimationMixer(fbx);
-        
+
         fbx.traverse(c => {
             c.castShadow = true;
             c.receiveShadow = false;
         });
 
 
-        skeleton = new THREE.SkeletonHelper( fbx );
+        skeleton = new THREE.SkeletonHelper(fbx);
         skeleton.visible = true;
-        scene.add( skeleton );
+        scene.add(skeleton);
 
 
         character.load('./CharacterResources/Breathing Idle.fbx', function (anim) {
 
-            mixer.clipAction(anim.animations[0]).play();;
+            mixer.clipAction(anim.animations[0]).play();
+            idle = mixer.clipAction(anim.animations[0]);
+            
             actions.push({ anim, mixer });
 
 
@@ -92,6 +95,7 @@ function init() {
             character.load(`./CharacterResources/${animationModels[i]}`, function (anim) {
 
                 mixer.clipAction(anim.animations[0]);
+                clipActionModel.push(mixer.clipAction(anim.animations[0]));
                 actions.push({ anim, mixer });
 
                 anim.traverse(function (child) {
@@ -121,7 +125,7 @@ function init() {
     orbitControls.enableDamping = true;
     orbitControls.enableZoom = true;
     orbitControls.zoomSpeed = 1.15;
-    orbitControls.screenSpacePanning = false;
+    // orbitControls.screenSpacePanning = false;
     orbitControls.minDistance = 0;
     orbitControls.maxDistance = 45000;
     orbitControls.minPolarAngle = -Math.PI / 1.5;
@@ -156,10 +160,20 @@ window.addEventListener('resize', onWindowResize);
 
 
 function PlayNextAnimation(param) {
+
+    const currentClip = mixer.existingAction(mixer.clipAction);
+
+    console.log(currentClip);
+
     mixer.stopAllAction();
+        
     const action = actions[param];
+    
+    // idle.crossFadeTo(mixer.clipAction(action["anim"].animations[0]), .5)
+    clipActionModel[param].crossFadeTo(mixer.clipAction(action["anim"].animations[0]), .5)
+
     mixer.weight = 1;
-    mixer.fadein = 0.5;
+    mixer.fadein = 1;
     mixer.clipAction(action["anim"].animations[0]).play();
 }
 
@@ -171,16 +185,20 @@ function PlayNextAnimation(param) {
 // }
 
 window.addEventListener('keydown', (e) => {
+    console.log(e.key);
     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
         PlayNextAnimation(4);
     }
     if (e.key === 'q') {
         PlayNextAnimation(3);
     }
+    if (e.key === 'e') {
+        PlayNextAnimation(5);
+    }
     if (e.key === ' ') {
         PlayNextAnimation(2);
     }
-    if (e.key === 'shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
+    if (e.key === 'Shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
         PlayNextAnimation(0);
     }
 });
