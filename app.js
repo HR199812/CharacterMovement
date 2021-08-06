@@ -2,7 +2,7 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, renderer, plane, orbitControls, actions = [];
+var camera, scene, renderer, skeleton, orbitControls, actions = [];
 
 var characteranimations = {
     idle: true,
@@ -111,6 +111,11 @@ function loadBot(check, path) {
         let ybotLoader = new FBXLoader();
         ybotLoader.load(path, (fbx) => {
 
+            skeleton = new THREE.SkeletonHelper(fbx);
+            skeleton.visible = true;
+            scene.add(skeleton);
+
+
             fbx.scale.setScalar(1);
             const mixer = new THREE.AnimationMixer(fbx);
             mixer.clipAction(fbx.animations[0]).play();
@@ -151,11 +156,11 @@ window.addEventListener('keyup', (e) => {
 window.addEventListener('mousedown', (e) => {
     characteranimations.idle = false;
     characteranimations.punch = true;
-    loadBot(characteranimations.punch, './CharacterResources/Boxing.fbx');
-    
+    // loadBot(characteranimations.punch, './CharacterResources/Boxing.fbx');
+
 });
 window.addEventListener('mouseup', (e) => {
     characteranimations.punch = false;
     characteranimations.idle = true;
-    loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
+    // loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
 });
