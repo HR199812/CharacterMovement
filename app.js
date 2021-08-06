@@ -4,18 +4,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 
 var camera, scene, renderer, skeleton, orbitControls, actions = [], mixer;
 
-var animationModels = ['Boxing.fbx', 'Breathing Idle.fbx', 'Jumping Up.fbx',
+var animationModels = ['Boxing.fbx', 'Breathing Idle.fbx', 'Jump.fbx',
     'Running.fbx', 'Silly Dancing.fbx', 'Start Walking.fbx'];
-
-var characteranimations = {
-    idle: true,
-    run: false,
-    walk: false,
-    jump: false,
-    punch: false,
-    dance: false
-}
-
 
 function init() {
 
@@ -45,7 +35,6 @@ function init() {
     // var ambientLight = new THREE.AmbientLight(0xFFFFFF, 3);
     // scene.add(ambientLight);
 
-    // let hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0x080820, 4);
     let hemiLight = new THREE.HemisphereLight(0xd3d3d3, 0xFFFFFF, 1);
     hemiLight.color.setHSL(0.6, 0.6, 0.6);
     hemiLight.groundColor.setHSL(0.1, 1, 0.4);
@@ -65,18 +54,22 @@ function init() {
     gridHelper.material.transparent = true;
     scene.add(gridHelper);
 
-    // loadBot(characteranimations.idle, './CharacterResources/Breathing Idle.fbx');
 
     let character = new FBXLoader();
     character.load('./CharacterResources/ybot.fbx', (fbx) => {
 
+        mixer = new THREE.AnimationMixer(fbx);
+        
         fbx.traverse(c => {
             c.castShadow = true;
             c.receiveShadow = false;
         });
 
 
-        mixer = new THREE.AnimationMixer(fbx);
+        skeleton = new THREE.SkeletonHelper( fbx );
+        skeleton.visible = true;
+        scene.add( skeleton );
+
 
         character.load('./CharacterResources/Breathing Idle.fbx', function (anim) {
 
@@ -100,8 +93,6 @@ function init() {
 
                 mixer.clipAction(anim.animations[0]);
                 actions.push({ anim, mixer });
-
-                console.log(actions)
 
                 anim.traverse(function (child) {
 
@@ -137,8 +128,6 @@ function init() {
     orbitControls.maxPolarAngle = Math.PI / 2.5;
     orbitControls.update();
 
-    // renderer.render(scene, camera);
-
     animate();
 }
 
@@ -165,43 +154,13 @@ function onWindowResize() {
 
 window.addEventListener('resize', onWindowResize);
 
-// function loadBot(check, path) {
-//     if (check) {
-
-//         actions.pop();
-
-//         let ybotLoader = new FBXLoader();
-//         ybotLoader.load(path, (fbx) => {
-
-//             skeleton = new THREE.SkeletonHelper(fbx);
-//             skeleton.visible = true;
-//             scene.add(skeleton);
-
-
-//             fbx.scale.setScalar(1);
-//             const mixer = new THREE.AnimationMixer(fbx);
-//             mixer.clipAction(fbx.animations[0]).play();
-//             actions.push({ fbx, mixer });
-
-//             fbx.position.set(0, 0, 0);
-//             fbx.traverse(c => {
-//                 c.castShadow = true;
-//                 c.receiveShadow = false;
-//             });
-
-//             scene.add(fbx);
-//         })
-//     }
-// }
-
 
 function PlayNextAnimation(param) {
     mixer.stopAllAction();
     const action = actions[param];
     mixer.weight = 1;
-    // mixer.fadein = 0.5;
+    mixer.fadein = 0.5;
     mixer.clipAction(action["anim"].animations[0]).play();
-    // action.play();
 }
 
 // function backToIdleState(){
@@ -213,42 +172,28 @@ function PlayNextAnimation(param) {
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
-        characteranimations.idle = false;
-        characteranimations.walk = true;
         PlayNextAnimation(4);
     }
     if (e.key === 'q') {
         PlayNextAnimation(3);
-        characteranimations.idle = false;
-        characteranimations.dance = true;
     }
     if (e.key === ' ') {
-        characteranimations.idle = false;
-        characteranimations.jump = true;
-        PlayNextAnimation(0);
+        PlayNextAnimation(2);
     }
     if (e.key === 'shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
-        characteranimations.idle = false;
-        characteranimations.jump = true;
-        PlayNextAnimation(1);
+        PlayNextAnimation(0);
     }
 });
 window.addEventListener('keyup', (e) => {
     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
-        characteranimations.walk = false;
-        characteranimations.idle = true;
+
     }
     if (e.key === 'q') {
-        characteranimations.dance = false;
-        characteranimations.idle = true;
     }
 });
 
 window.addEventListener('mousedown', (e) => {
-    characteranimations.idle = false;
-    characteranimations.punch = true;
+    PlayNextAnimation(2);
 });
 window.addEventListener('mouseup', (e) => {
-    characteranimations.punch = false;
-    characteranimations.idle = true;
 });
