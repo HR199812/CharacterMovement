@@ -2,7 +2,7 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, renderer, skeleton, orbitControls, actions = [], mixer ,idle;
+var camera, scene, renderer, skeleton, orbitControls, actions = [], mixer , prevAction;
 
 var animationModels = ['Boxing.fbx', 'Breathing Idle.fbx', 'Jump.fbx',
     'Running.fbx', 'Silly Dancing.fbx', 'Start Walking.fbx'];
@@ -75,7 +75,7 @@ function init() {
         character.load('./CharacterResources/Breathing Idle.fbx', function (anim) {
 
             mixer.clipAction(anim.animations[0]).play();
-            idle = mixer.clipAction(anim.animations[0]);
+            prevAction = mixer.clipAction(anim.animations[0]);
             
             actions.push({ anim, mixer });
 
@@ -112,6 +112,10 @@ function init() {
         scene.add(fbx);
 
     });
+
+
+    // let tempaction = actions[2];
+    // prevAction = mixer.clipAction(tempaction["anim"].animations[0]);
 
 
     renderer = new THREE.WebGLRenderer({ antialiasing: true });
@@ -160,32 +164,26 @@ window.addEventListener('resize', onWindowResize);
 
 
 function PlayNextAnimation(param) {
-
-    const currentClip = mixer.existingAction(mixer.clipAction);
-
-    console.log(currentClip);
-
-    mixer.stopAllAction();
         
     const action = actions[param];
     
-    // idle.crossFadeTo(mixer.clipAction(action["anim"].animations[0]), .5)
-    clipActionModel[param].crossFadeTo(mixer.clipAction(action["anim"].animations[0]), .5)
+    prevAction.crossFadeTo(mixer.clipAction(action["anim"].animations[0]), .5);
 
     mixer.weight = 1;
     mixer.fadein = 1;
+
     mixer.clipAction(action["anim"].animations[0]).play();
+
+    
+    mixer.weight = 0;
+    mixer.fadeout = 1;
+    prevAction = mixer.clipAction(action["anim"].animations[0]);
+
 }
 
-// function backToIdleState(){
-//     mixer.stopAllAction();
-//     const action = actions[5];
-//     mixer.weight = 1;
-//     mixer.clipAction(action["anim"].animations[0]).play();
-// }
 
 window.addEventListener('keydown', (e) => {
-    console.log(e.key);
+
     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
         PlayNextAnimation(4);
     }
@@ -193,7 +191,7 @@ window.addEventListener('keydown', (e) => {
         PlayNextAnimation(3);
     }
     if (e.key === 'e') {
-        PlayNextAnimation(5);
+        PlayNextAnimation(6);
     }
     if (e.key === ' ') {
         PlayNextAnimation(2);
