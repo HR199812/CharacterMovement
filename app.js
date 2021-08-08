@@ -5,9 +5,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 // Delta Time variable to update animations smoothly
 const clock = new THREE.Clock();
 
-// Variables for scene, camera, models, controls, character, characterAnimationClips
-var camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
-    character, actions = [], mixer, prevAction;
+// Variables for scene, camera, lights models, controls, character, characterAnimationClips
+let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
+    character, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight;
 
 // Character Animation Model
 var charAnimationsObj = {
@@ -19,7 +19,7 @@ var charAnimationsObj = {
 };
 
 // Array To store models name for referencing in various calls
-var animationModels = ['Boxing', 'Breathing Idle', 'Jump',
+let animationModels = ['Boxing', 'Breathing Idle', 'Jump',
     'Running', 'Silly Dancing', 'Start Walking'];
 
 // Fixed path of Character Resources
@@ -136,7 +136,7 @@ function initScene() {
     camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(-180, 250, -150);
 
-    let dirlight = new THREE.DirectionalLight(0xd3d3d3, 1);
+    dirlight = new THREE.DirectionalLight(0xd3d3d3, 1);
     dirlight.position.set(20, 100, 10);
     dirlight.target.position.set(0, 0, 0);
     dirlight.castShadow = true;
@@ -151,10 +151,10 @@ function initScene() {
 
     scene.add(dirlight);
 
-    var ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.3);
+    ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.3);
     scene.add(ambientLight);
 
-    let hemiLight = new THREE.HemisphereLight(0xbfd1e5, 0xFFFFFF, 1);
+    hemiLight = new THREE.HemisphereLight(0xbfd1e5, 0xFFFFFF, 1);
     hemiLight.color.setHSL(0.8, 0.8, 0.8);
     hemiLight.groundColor.setHSL(0.1, 1, 0.4);
     hemiLight.position.set(0, 50, 0);
