@@ -2,11 +2,76 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, renderer, skeleton, orbitControls, actions = [], mixer , prevAction;
+var camera, scene, char, renderer, skeleton, orbitControls, actions = [], mixer, prevAction;
 
 var animationModels = ['Boxing.fbx', 'Breathing Idle.fbx', 'Jump.fbx',
     'Running.fbx', 'Silly Dancing.fbx', 'Start Walking.fbx'];
 var clipActionModel = [];
+
+
+let character = new FBXLoader();
+const characterPromise = Promise.resolve(
+    character.load('./CharacterResources/ybot.fbx', (fbx) => {
+
+        mixer = new THREE.AnimationMixer(fbx);
+    
+        fbx.traverse(c => {
+            c.castShadow = true;
+            c.receiveShadow = false;
+        });
+    
+    
+        skeleton = new THREE.SkeletonHelper(fbx);
+        skeleton.visible = true;
+        // scene.add(skeleton);
+
+        char = fbx;
+    
+    
+        character.load('./CharacterResources/Breathing Idle.fbx', function (anim) {
+    
+            mixer.clipAction(anim.animations[0]).play();
+            prevAction = mixer.clipAction(anim.animations[0]);
+    
+            actions.push({ anim, mixer });
+    
+    
+            anim.traverse(function (child) {
+    
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = false;
+                }
+            });
+        });
+    
+    
+        for (let i = 0; i < animationModels.length; i++) {
+    
+            character.load(`./CharacterResources/${animationModels[i]}`, function (anim) {
+    
+                mixer.clipAction(anim.animations[0]);
+                clipActionModel.push(mixer.clipAction(anim.animations[0]));
+                // actions.push({ anim, mixer });
+                actions.push(anim);
+    
+                anim.traverse(function (child) {
+    
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = false;
+                    }
+                });
+            });
+        }
+    
+    
+        // scene.add(fbx);
+    
+    })
+);
+Promise.all([characterPromise]).then(() => { init(); });
+
 
 function init() {
 
@@ -56,64 +121,6 @@ function init() {
     scene.add(gridHelper);
 
 
-    let character = new FBXLoader();
-    character.load('./CharacterResources/ybot.fbx', (fbx) => {
-
-        mixer = new THREE.AnimationMixer(fbx);
-
-        fbx.traverse(c => {
-            c.castShadow = true;
-            c.receiveShadow = false;
-        });
-
-
-        skeleton = new THREE.SkeletonHelper(fbx);
-        skeleton.visible = true;
-        scene.add(skeleton);
-
-
-        character.load('./CharacterResources/Breathing Idle.fbx', function (anim) {
-
-            mixer.clipAction(anim.animations[0]).play();
-            prevAction = mixer.clipAction(anim.animations[0]);
-            
-            actions.push({ anim, mixer });
-
-
-            anim.traverse(function (child) {
-
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = false;
-                }
-            });
-        });
-
-
-        for (let i = 0; i < animationModels.length; i++) {
-
-            character.load(`./CharacterResources/${animationModels[i]}`, function (anim) {
-
-                mixer.clipAction(anim.animations[0]);
-                clipActionModel.push(mixer.clipAction(anim.animations[0]));
-                actions.push({ anim, mixer });
-
-                anim.traverse(function (child) {
-
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = false;
-                    }
-                });
-            });
-        }
-
-
-        scene.add(fbx);
-
-    });
-
-
     // let tempaction = actions[2];
     // prevAction = mixer.clipAction(tempaction["anim"].animations[0]);
 
@@ -143,7 +150,12 @@ const clock = new THREE.Clock();
 
 function animate() {
 
-    actions.forEach(({ mixer }) => { mixer.update(clock.getDelta()); });
+    // mixer.forEach((mixer) => {
+
+    //     mixer.update(clock.getDelta());
+    // });
+
+    if (mixer) mixer.update(clock.getDelta());
 
     requestAnimationFrame(animate);
 
@@ -151,7 +163,7 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-init();
+// init();
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight
@@ -164,20 +176,25 @@ window.addEventListener('resize', onWindowResize);
 
 
 function PlayNextAnimation(param) {
-        
+
+    // mixer.stopAllAction();
+
+    console.log(character);
+
+    console.log(skeleton['bones']);
+
     const action = actions[param];
-    
-    prevAction.crossFadeTo(mixer.clipAction(action["anim"].animations[0]), .5);
 
-    mixer.weight = 1;
-    mixer.fadein = 1;
+    action.weight = 1;
+    action.fadein = 1;
 
-    mixer.clipAction(action["anim"].animations[0]).play();
+    prevAction.crossFadeTo(mixer.clipAction(action.animations[0]), .5);
 
-    
-    mixer.weight = 0;
-    mixer.fadeout = 1;
-    prevAction = mixer.clipAction(action["anim"].animations[0]);
+    mixer.clipAction(action.animations[0]).play();
+
+    action.weight = 0;
+    action.fadeout = 1;
+    prevAction = mixer.clipAction(action.animations[0]);
 
 }
 
