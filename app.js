@@ -2,78 +2,120 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, char, renderer, skeleton, orbitControls, actions = [], mixer, prevAction;
+var camera, scene, renderer, skeleton, orbitControls,
+    character, actions = [], mixer, prevAction;
 
-var animationModels = ['Boxing.fbx', 'Breathing Idle.fbx', 'Jump.fbx',
-    'Running.fbx', 'Silly Dancing.fbx', 'Start Walking.fbx'];
-var clipActionModel = [];
+var charAnimationsObj = {
+    dance: null,
+    box: null,
+    walk: null,
+    run: null,
+    idle: null
+};
+
+var animationModels = ['Boxing', 'Breathing Idle', 'Jump',
+    'Running', 'Silly Dancing', 'Start Walking'];
+
+const resourcePath = './CharacterResources/';
+
+    initScene();
+initRenderer();
+await loadModels();
+animate();
 
 
-let character = new FBXLoader();
-const characterPromise = Promise.resolve(
-    character.load('./CharacterResources/ybot.fbx', (fbx) => {
+async function loadModels() {
+    character = new FBXLoader();
+
+    character.setPath(resourcePath);
+    character.load('ybot.fbx', (fbx) => {
 
         mixer = new THREE.AnimationMixer(fbx);
-    
+
         fbx.traverse(c => {
             c.castShadow = true;
             c.receiveShadow = false;
         });
-    
-    
+
+
         skeleton = new THREE.SkeletonHelper(fbx);
         skeleton.visible = true;
-        // scene.add(skeleton);
+        scene.add(skeleton);
 
-        char = fbx;
-    
-    
-        character.load('./CharacterResources/Breathing Idle.fbx', function (anim) {
-    
+
+        character.load('Breathing Idle.fbx', function (anim) {
+
             mixer.clipAction(anim.animations[0]).play();
             prevAction = mixer.clipAction(anim.animations[0]);
-    
+
             actions.push({ anim, mixer });
-    
-    
+
+
             anim.traverse(function (child) {
-    
+
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = false;
                 }
             });
         });
-    
-    
-        for (let i = 0; i < animationModels.length; i++) {
-    
-            character.load(`./CharacterResources/${animationModels[i]}`, function (anim) {
-    
-                mixer.clipAction(anim.animations[0]);
-                clipActionModel.push(mixer.clipAction(anim.animations[0]));
-                // actions.push({ anim, mixer });
-                actions.push(anim);
-    
-                anim.traverse(function (child) {
-    
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = false;
-                    }
-                });
+
+
+        loadNextAnimation();
+
+
+        scene.add(fbx);
+
+    });
+}
+function loadNextAnimation() {
+    for (let i = 0; i < animationModels.length; i++) {
+
+        character.load(`${animationModels[i]}.fbx`, function (anim) {
+
+
+            mixer.clipAction(anim.animations[0]);
+
+            if (animationModels[i] === 'Boxing') charAnimationsObj.box = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Silly Dancing') charAnimationsObj.dance = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Start Walking') charAnimationsObj.walk = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Jump') charAnimationsObj.jump = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Running') charAnimationsObj.run = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Breathing Idle') charAnimationsObj.idle = mixer.clipAction(anim.animations[0]);
+            actions.push(anim);
+
+            anim.traverse(function (child) {
+
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = false;
+                }
             });
-        }
-    
-    
-        // scene.add(fbx);
-    
-    })
-);
-Promise.all([characterPromise]).then(() => { init(); });
+        });
+    }
+}
+function initRenderer() {
 
+    renderer = new THREE.WebGLRenderer({ antialiasing: true });
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.toneMappingExposure = 2.3;
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-function init() {
+    orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls.enableDamping = true;
+    orbitControls.enableZoom = true;
+    orbitControls.zoomSpeed = 1.15;
+    orbitControls.screenSpacePanning = false;
+    orbitControls.minDistance = 0;
+    orbitControls.maxDistance = 45000;
+    orbitControls.minPolarAngle = -Math.PI / 1.5;
+    orbitControls.maxPolarAngle = Math.PI / 2.5;
+    orbitControls.update();
+}
+
+function initScene() {
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xbfd1e5);
@@ -120,30 +162,7 @@ function init() {
     gridHelper.material.transparent = true;
     scene.add(gridHelper);
 
-
-    // let tempaction = actions[2];
-    // prevAction = mixer.clipAction(tempaction["anim"].animations[0]);
-
-
-    renderer = new THREE.WebGLRenderer({ antialiasing: true });
-    renderer.toneMapping = THREE.ReinhardToneMapping;
-    renderer.toneMappingExposure = 2.3;
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    orbitControls = new OrbitControls(camera, renderer.domElement);
-    orbitControls.enableDamping = true;
-    orbitControls.enableZoom = true;
-    orbitControls.zoomSpeed = 1.15;
-    // orbitControls.screenSpacePanning = false;
-    orbitControls.minDistance = 0;
-    orbitControls.maxDistance = 45000;
-    orbitControls.minPolarAngle = -Math.PI / 1.5;
-    orbitControls.maxPolarAngle = Math.PI / 2.5;
-    orbitControls.update();
-
-    animate();
+    window.addEventListener('resize', onWindowResize);
 }
 
 const clock = new THREE.Clock();
@@ -172,8 +191,6 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-window.addEventListener('resize', onWindowResize);
-
 
 function PlayNextAnimation(param) {
 
@@ -183,18 +200,19 @@ function PlayNextAnimation(param) {
 
     console.log(skeleton['bones']);
 
-    const action = actions[param];
+    // const action = actions[param];
 
-    action.weight = 1;
-    action.fadein = 1;
+    const action = param;
+    // action.weight = 1;
+    // action.fadein = 1;
 
-    prevAction.crossFadeTo(mixer.clipAction(action.animations[0]), .5);
+    prevAction.crossFadeTo(action, .5);
 
-    mixer.clipAction(action.animations[0]).play();
+    action.play();
 
-    action.weight = 0;
-    action.fadeout = 1;
-    prevAction = mixer.clipAction(action.animations[0]);
+    // action.weight = 0;
+    // action.fadeout = 1;
+    prevAction = action;
 
 }
 
@@ -202,16 +220,16 @@ function PlayNextAnimation(param) {
 window.addEventListener('keydown', (e) => {
 
     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
-        PlayNextAnimation(4);
+        PlayNextAnimation(charAnimationsObj.walk);
     }
     if (e.key === 'q') {
-        PlayNextAnimation(3);
+        PlayNextAnimation(charAnimationsObj.dance);
     }
     if (e.key === 'e') {
-        PlayNextAnimation(6);
+        PlayNextAnimation(charAnimationsObj.idle);
     }
     if (e.key === ' ') {
-        PlayNextAnimation(2);
+        PlayNextAnimation(charAnimationsObj.jump);
     }
     if (e.key === 'Shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
         PlayNextAnimation(0);
@@ -226,7 +244,7 @@ window.addEventListener('keyup', (e) => {
 });
 
 window.addEventListener('mousedown', (e) => {
-    PlayNextAnimation(1);
+    PlayNextAnimation(charAnimationsObj.box);
 });
 window.addEventListener('mouseup', (e) => {
 });
