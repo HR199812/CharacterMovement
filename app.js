@@ -2,9 +2,14 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 
-var camera, scene, renderer, skeleton, orbitControls,
+// Delta Time variable to update animations smoothly
+const clock = new THREE.Clock();
+
+// Variables for scene, camera, models, controls, character, characterAnimationClips
+var camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
     character, actions = [], mixer, prevAction;
 
+// Character Animation Model
 var charAnimationsObj = {
     dance: null,
     box: null,
@@ -13,17 +18,19 @@ var charAnimationsObj = {
     idle: null
 };
 
+// Array To store models name for referencing in various calls
 var animationModels = ['Boxing', 'Breathing Idle', 'Jump',
     'Running', 'Silly Dancing', 'Start Walking'];
 
+// Fixed path of Character Resources
 const resourcePath = './CharacterResources/';
 
-    initScene();
+initScene();
 initRenderer();
 await loadModels();
 animate();
 
-
+// Function to load character and it's related animations
 async function loadModels() {
     character = new FBXLoader();
 
@@ -68,6 +75,8 @@ async function loadModels() {
 
     });
 }
+
+// Function to load all the animations of the character
 function loadNextAnimation() {
     for (let i = 0; i < animationModels.length; i++) {
 
@@ -94,6 +103,8 @@ function loadNextAnimation() {
         });
     }
 }
+
+// Function to render the 3d World
 function initRenderer() {
 
     renderer = new THREE.WebGLRenderer({ antialiasing: true });
@@ -115,6 +126,7 @@ function initRenderer() {
     orbitControls.update();
 }
 
+// Function to initialise 3d World
 function initScene() {
 
     scene = new THREE.Scene();
@@ -127,24 +139,22 @@ function initScene() {
     dirlight.position.set(20, 100, 10);
     dirlight.target.position.set(0, 0, 0);
     dirlight.castShadow = true;
-    dirlight.shadow.mapSize.width = 2048;
-    dirlight.shadow.mapSize.height = 2048;
-    dirlight.shadow.camera.near = 0.1;
-    dirlight.shadow.camera.far = 500.0;
-    dirlight.shadow.camera.near = 0.5;
-    dirlight.shadow.camera.far = 500.0;
-    dirlight.shadow.camera.left = 100;
-    dirlight.shadow.camera.right = -100;
-    dirlight.shadow.camera.top = 100;
-    dirlight.shadow.camera.bottom = -100;
+    dirlight.shadow.mapSize.width = cameraMapSize;
+    dirlight.shadow.mapSize.height = cameraMapSize;
+    dirlight.shadow.camera.near = cameraNear;
+    dirlight.shadow.camera.far = cameraNear * 1000;
+    dirlight.shadow.camera.left = cameraTRBL;
+    dirlight.shadow.camera.right = -cameraTRBL;
+    dirlight.shadow.camera.top = cameraTRBL;
+    dirlight.shadow.camera.bottom = -cameraTRBL;
 
     scene.add(dirlight);
 
-    // var ambientLight = new THREE.AmbientLight(0xFFFFFF, 3);
-    // scene.add(ambientLight);
+    var ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.3);
+    scene.add(ambientLight);
 
-    let hemiLight = new THREE.HemisphereLight(0xd3d3d3, 0xFFFFFF, 1);
-    hemiLight.color.setHSL(0.6, 0.6, 0.6);
+    let hemiLight = new THREE.HemisphereLight(0xbfd1e5, 0xFFFFFF, 1);
+    hemiLight.color.setHSL(0.8, 0.8, 0.8);
     hemiLight.groundColor.setHSL(0.1, 1, 0.4);
     hemiLight.position.set(0, 50, 0);
     scene.add(hemiLight);
@@ -165,8 +175,8 @@ function initScene() {
     window.addEventListener('resize', onWindowResize);
 }
 
-const clock = new THREE.Clock();
 
+// Animate each and every frame with each and every change
 function animate() {
 
     // mixer.forEach((mixer) => {
@@ -182,8 +192,7 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// init();
-
+// Called when window is resized and update the view with window size
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix();
@@ -191,18 +200,18 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-
+// Swtich from Previous to Next Animation
 function PlayNextAnimation(param) {
 
     // mixer.stopAllAction();
 
-    console.log(character);
+    // console.log(character);
 
-    console.log(skeleton['bones']);
+    // console.log(skeleton['bones']);
 
-    // const action = actions[param];
 
     const action = param;
+
     // action.weight = 1;
     // action.fadein = 1;
 
@@ -216,7 +225,7 @@ function PlayNextAnimation(param) {
 
 }
 
-
+// Keyboard Key Click/Release Events
 window.addEventListener('keydown', (e) => {
 
     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
@@ -243,8 +252,9 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
+// Mouse Click/Release Events
 window.addEventListener('mousedown', (e) => {
     PlayNextAnimation(charAnimationsObj.box);
 });
-window.addEventListener('mouseup', (e) => {
-});
+// window.addEventListener('mouseup', (e) => {
+// });
