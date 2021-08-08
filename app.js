@@ -108,6 +108,8 @@ function loadNextAnimation() {
 function initRenderer() {
 
     renderer = new THREE.WebGLRenderer({ antialiasing: true });
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ReinhardToneMapping;
     renderer.toneMappingExposure = 2.3;
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -137,11 +139,13 @@ function initScene() {
     camera.position.set(-180, 250, -150);
 
     dirlight = new THREE.DirectionalLight(0xd3d3d3, 1);
-    dirlight.position.set(20, 100, 10);
+    dirlight.position.set(100, 100, 10);
     dirlight.target.position.set(0, 0, 0);
     dirlight.castShadow = true;
     dirlight.shadow.mapSize.width = cameraMapSize;
     dirlight.shadow.mapSize.height = cameraMapSize;
+    // dirlight.shadow.camera.near = 0.1;
+    // dirlight.shadow.camera.far = 500.0;
     dirlight.shadow.camera.near = cameraNear;
     dirlight.shadow.camera.far = cameraNear * 1000;
     dirlight.shadow.camera.left = cameraTRBL;
@@ -157,7 +161,7 @@ function initScene() {
     hemiLight = new THREE.HemisphereLight(0xbfd1e5, 0xFFFFFF, 1);
     hemiLight.color.setHSL(0.8, 0.8, 0.8);
     hemiLight.groundColor.setHSL(0.1, 1, 0.4);
-    hemiLight.position.set(0, 50, 0);
+    hemiLight.position.set(100, 100, 10);
     scene.add(hemiLight);
 
 
@@ -166,6 +170,7 @@ function initScene() {
         new THREE.MeshPhongMaterial({ color: 0xFFFFFF, wireframe: false, depthWrite: false }));
     mesh.rotation.x = - Math.PI / 2;
     mesh.receiveShadow = true;
+    mesh.castShadow = false;
     scene.add(mesh);
 
     const gridHelper = new THREE.GridHelper(15000, 100, 0x000000, 0x000000);
@@ -208,13 +213,13 @@ function PlayNextAnimation(param) {
 
     // console.log(character);
 
-    // console.log(skeleton['bones']);
+    console.log(skeleton['bones']);
 
 
     const action = param;
 
-    // action.weight = 1;
-    // action.fadein = 1;
+    action.weight = 1;
+    action.fadein = 1;
 
     prevAction.crossFadeTo(action, .5);
 
