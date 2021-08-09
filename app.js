@@ -7,7 +7,7 @@ const clock = new THREE.Clock();
 
 // Variables for scene, camera, lights models, controls, character, characterAnimationClips
 let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
-    character, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight;
+    character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight;
 
 // Character Animation Model
 var charAnimationsObj = {
@@ -39,6 +39,8 @@ async function loadModels() {
 
     character.setPath(resourcePath);
     character.load('ybot.fbx', (fbx) => {
+
+        characterRotation = fbx;
 
         mixer = new THREE.AnimationMixer(fbx);
 
@@ -239,7 +241,17 @@ function PlayNextAnimation(param) {
 window.addEventListener('keydown', (e) => {
 
 
-    if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
+    if (e.key === 'w') {
+        if(rotationCheck === 360) {
+            characterRotation.rotation.y = -360;
+            PlayNextAnimation(charAnimationsObj.walk);
+        }
+        else PlayNextAnimation(charAnimationsObj.walk);
+    }
+    if (e.key === 's') {
+        // Character rotation to be implemented
+        rotationCheck = characterRotation.rotation.y = 360;
+
         PlayNextAnimation(charAnimationsObj.walk);
     }
     if (e.key === 'q') {
