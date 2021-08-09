@@ -13,14 +13,17 @@ let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMa
 var charAnimationsObj = {
     dance: null,
     box: null,
+    block: null,
     walk: null,
     run: null,
-    idle: null
+    idle: null,
+    crouch: null,
+    wave: null
 };
 
 // Array To store models name for referencing in various calls
-let animationModels = ['Boxing', 'Breathing Idle', 'Jump',
-    'Running', 'Silly Dancing', 'Start Walking'];
+let animationModels = ['Boxing', 'Idle', 'Jump', 'Waving',
+    'Running', 'Silly Dancing', 'Walking', 'Block', 'Standing to Crouch'];
 
 // Fixed path of Character Resources
 const resourcePath = './CharacterResources/';
@@ -50,7 +53,7 @@ async function loadModels() {
         scene.add(skeleton);
 
 
-        character.load('Breathing Idle.fbx', function (anim) {
+        character.load('Idle.fbx', function (anim) {
 
             mixer.clipAction(anim.animations[0]).play();
             prevAction = mixer.clipAction(anim.animations[0]);
@@ -86,11 +89,14 @@ function loadNextAnimation() {
             mixer.clipAction(anim.animations[0]);
 
             if (animationModels[i] === 'Boxing') charAnimationsObj.box = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Block') charAnimationsObj.block = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Standing to Crouch') charAnimationsObj.crouch = mixer.clipAction(anim.animations[0]);
             else if (animationModels[i] === 'Silly Dancing') charAnimationsObj.dance = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Start Walking') charAnimationsObj.walk = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Walking') charAnimationsObj.walk = mixer.clipAction(anim.animations[0]);
             else if (animationModels[i] === 'Jump') charAnimationsObj.jump = mixer.clipAction(anim.animations[0]);
             else if (animationModels[i] === 'Running') charAnimationsObj.run = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Breathing Idle') charAnimationsObj.idle = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Waving') charAnimationsObj.wave = mixer.clipAction(anim.animations[0]);
+            else if (animationModels[i] === 'Idle') charAnimationsObj.idle = mixer.clipAction(anim.animations[0]);
             actions.push(anim);
 
             anim.traverse(function (child) {
@@ -211,9 +217,7 @@ function PlayNextAnimation(param) {
 
     // mixer.stopAllAction();
 
-    // console.log(character);
-
-    console.log(skeleton['bones']);
+    // console.log(skeleton['bones']);
 
 
     const action = param;
@@ -234,6 +238,7 @@ function PlayNextAnimation(param) {
 // Keyboard Key Click/Release Events
 window.addEventListener('keydown', (e) => {
 
+
     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
         PlayNextAnimation(charAnimationsObj.walk);
     }
@@ -243,24 +248,36 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'e') {
         PlayNextAnimation(charAnimationsObj.idle);
     }
+    if (e.key === 'c') {
+        PlayNextAnimation(charAnimationsObj.wave);
+    }
     if (e.key === ' ') {
         PlayNextAnimation(charAnimationsObj.jump);
     }
-    if (e.key === 'Shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
-        PlayNextAnimation(0);
+    // if (e.key === 'Shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
+    if (e.key === 'Shift') {
+        PlayNextAnimation(charAnimationsObj.run);
+    }
+    if (e.key === 'Control') {
+        PlayNextAnimation(charAnimationsObj.crouch);
     }
 });
-window.addEventListener('keyup', (e) => {
-    if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
+// window.addEventListener('keyup', (e) => {
+//     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
 
-    }
-    if (e.key === 'q') {
-    }
-});
+//     }
+//     if (e.key === 'q') {
+//     }
+// });
 
 // Mouse Click/Release Events
 window.addEventListener('mousedown', (e) => {
-    PlayNextAnimation(charAnimationsObj.box);
+    if(e.button === 0){
+        PlayNextAnimation(charAnimationsObj.box);
+    }
+    else if(e.button === 2){
+        PlayNextAnimation(charAnimationsObj.block);
+    }
 });
 // window.addEventListener('mouseup', (e) => {
 // });
