@@ -222,18 +222,18 @@ function PlayNextAnimation(param) {
     // console.log(skeleton['bones']);
 
 
-    const action = param;
+    // const action = param;
 
-    action.weight = 1;
-    action.fadein = 1;
-
-    prevAction.crossFadeTo(action, .5);
-
-    action.play();
-
-    // action.weight = 0;
-    // action.fadeout = 1;
-    prevAction = action;
+        param.weight = 1;
+        param.fadein = 1;
+    
+        prevAction.crossFadeTo(param, .5);
+    
+        param.play();
+    
+        // param.weight = 0;
+        // param.fadeout = 1;
+        prevAction = param;
 
 }
 
