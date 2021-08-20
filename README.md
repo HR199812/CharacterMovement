@@ -1,4 +1,4 @@
 # CharacterMovement
  RPG Character Simulation  
- ##Controls:
+## Controls:
  **W/S**, **C**, **Space**, **Left Shift**, **Left Control**, **E**, **Q**, **Left Mouse Click**
