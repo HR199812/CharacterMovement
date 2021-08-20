@@ -1,6 +1,7 @@
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+// import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.module.min.js';
 
 // Delta Time variable to update animations smoothly
 const clock = new THREE.Clock();
@@ -217,7 +218,7 @@ function onWindowResize() {
 // Swtich from Previous to Next Animation
 function PlayNextAnimation(param) {
 
-    // mixer.stopAllAction();
+    mixer.stopAllAction();
 
     // console.log(skeleton['bones']);
 
