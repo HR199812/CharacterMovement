@@ -222,19 +222,14 @@ function PlayNextAnimation(param) {
 
     // console.log(skeleton['bones']);
 
+    param.weight = 1;
+    param.fadeIn(1);
 
-    // const action = param;
+    prevAction.crossFadeTo(param, .5);
 
-        param.weight = 1;
-        param.fadein = 1;
-    
-        prevAction.crossFadeTo(param, .5);
-    
-        param.play();
-    
-        // param.weight = 0;
-        // param.fadeout = 1;
-        prevAction = param;
+    param.play();
+
+    prevAction = param;
 
 }
 
@@ -243,7 +238,7 @@ window.addEventListener('keydown', (e) => {
 
 
     if (e.key === 'w') {
-        if(rotationCheck === 360) {
+        if (rotationCheck === 360) {
             characterRotation.rotation.y = -360;
             PlayNextAnimation(charAnimationsObj.walk);
         }
@@ -285,10 +280,10 @@ window.addEventListener('keydown', (e) => {
 
 // Mouse Click/Release Events
 window.addEventListener('mousedown', (e) => {
-    if(e.button === 0){
+    if (e.button === 0) {
         PlayNextAnimation(charAnimationsObj.box);
     }
-    else if(e.button === 2){
+    else if (e.button === 2) {
         PlayNextAnimation(charAnimationsObj.block);
     }
 });
