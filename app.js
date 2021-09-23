@@ -218,14 +218,16 @@ function onWindowResize() {
 // Swtich from Previous to Next Animation
 function PlayNextAnimation(param) {
 
-    mixer.stopAllAction();
-
-    // console.log(skeleton['bones']);
+    prevAction.weight = 0.5;
+    prevAction.fadeOut(1);
 
     param.weight = 1;
-    param.fadeIn(1);
-
+    param.fadeIn(0);
     prevAction.crossFadeTo(param, .5);
+    
+    mixer.stopAllAction();
+    // console.log(skeleton['bones']);
+
 
     param.play();
 
