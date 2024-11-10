@@ -19,3 +19,8 @@
     pointer-events: none;
     z-index: 1;
 }
+
+.dg.main.a {
+    margin-top: -100vh;
+    z-index: 10000;
+}

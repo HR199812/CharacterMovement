@@ -3,18 +3,16 @@ import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/j
 // import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.module.min.js';
 
-window.addEventListener('load', async () => {
+window.addEventListener('DOMContentLoaded', async () => {
     // Delta Time variable to update animations smoothly
     const clock = new THREE.Clock();
 
     // Variables for scene, camera, lights models, controls, character, characterAnimationClips
     let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
-        character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight, stats, panelSettings;
+        character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight, stats, panel;
 
-    let theta = 0;
-    let phi = 0;
-    const radius = 300; // Adjust radius based on your scene
     const crossFadeControls = [];
+    let panelSettings;
     const allActions = [];
     const baseActions = {
         idle: { weight: 1 },
@@ -27,6 +25,15 @@ window.addEventListener('load', async () => {
         agree: { weight: 0 },
         headShake: { weight: 0 }
     };
+
+    function modifyTimeScale(speed) {
+
+        mixer.timeScale = speed;
+
+    }
+    let theta = 0;
+    let phi = 0;
+    const radius = 300; // Adjust radius based on your scene
 
     // Character Animation Model
     var charAnimationsObj = {
@@ -140,20 +147,11 @@ window.addEventListener('load', async () => {
         }
     }
 
-    function modifyTimeScale(speed) {
-
-        mixer.timeScale = speed;
-
-    }
 
     function createPanel() {
-
-        const panel = new dat.GUI({ width: 310 });
-
         const folder1 = panel.addFolder('Base Actions');
         const folder2 = panel.addFolder('Additive Action Weights');
         const folder3 = panel.addFolder('General Speed');
-
         panelSettings = {
             'modify time scale': 1.0
         };
@@ -228,7 +226,6 @@ window.addEventListener('load', async () => {
 
     }
 
-
     // Function to render the 3d World
     function initRenderer() {
 
@@ -254,7 +251,8 @@ window.addEventListener('load', async () => {
         orbitControls.enableRotate = false;
         orbitControls.update();
 
-        const gui = new dat.GUI();
+        panel = new dat.GUI({ width: 310 });
+        document.body.appendChild(panel.domElement);
         const stats = new Stats();
         container.appendChild(stats.dom);
         createPanel();
@@ -452,3 +450,4 @@ window.addEventListener('load', async () => {
     });
 
 });
+
