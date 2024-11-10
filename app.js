@@ -9,18 +9,12 @@ window.addEventListener('load', async () => {
 
     // Variables for scene, camera, lights models, controls, character, characterAnimationClips
     let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
-        character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight, stats, panelSettings;
+        character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight, stats;
 
     let theta = 0;
     let phi = 0;
     const radius = 300; // Adjust radius based on your scene
-    const crossFadeControls = [];
-    const allActions = [];
-    const baseActions = {
-        idle: { weight: 1 },
-        walk: { weight: 0 },
-        run: { weight: 0 }
-    };
+
     const additiveActions = {
         sneak_pose: { weight: 0 },
         sad_pose: { weight: 0 },
@@ -140,94 +134,6 @@ window.addEventListener('load', async () => {
         }
     }
 
-    function modifyTimeScale(speed) {
-
-        mixer.timeScale = speed;
-
-    }
-
-    function createPanel() {
-
-        const panel = new dat.GUI({ width: 310 });
-
-        const folder1 = panel.addFolder('Base Actions');
-        const folder2 = panel.addFolder('Additive Action Weights');
-        const folder3 = panel.addFolder('General Speed');
-
-        panelSettings = {
-            'modify time scale': 1.0
-        };
-
-        const baseNames = ['None', ...Object.keys(baseActions)];
-
-        for (let i = 0, l = baseNames.length; i !== l; ++i) {
-
-            const name = baseNames[i];
-            const settings = baseActions[name];
-            panelSettings[name] = function () {
-
-                const currentSettings = baseActions[currentBaseAction];
-                const currentAction = currentSettings ? currentSettings.action : null;
-                const action = settings ? settings.action : null;
-
-                if (currentAction !== action) {
-
-                    prepareCrossFade(currentAction, action, 0.35);
-
-                }
-
-            };
-
-            crossFadeControls.push(folder1.add(panelSettings, name));
-
-        }
-
-        for (const name of Object.keys(additiveActions)) {
-
-            const settings = additiveActions[name];
-
-            panelSettings[name] = settings.weight;
-            folder2.add(panelSettings, name, 0.0, 1.0, 0.01).listen().onChange(function (weight) {
-
-                setWeight(settings.action, weight);
-                settings.weight = weight;
-
-            });
-
-        }
-
-        folder3.add(panelSettings, 'modify time scale', 0.0, 1.5, 0.01).onChange(modifyTimeScale);
-
-        folder1.open();
-        folder2.open();
-        folder3.open();
-
-        crossFadeControls.forEach(function (control) {
-
-            control.setInactive = function () {
-
-                control.domElement.classList.add('control-inactive');
-
-            };
-
-            control.setActive = function () {
-
-                control.domElement.classList.remove('control-inactive');
-
-            };
-
-            const settings = baseActions[control.property];
-
-            if (!settings || !settings.weight) {
-
-                control.setInactive();
-
-            }
-
-        });
-
-    }
-
 
     // Function to render the 3d World
     function initRenderer() {
@@ -254,10 +160,8 @@ window.addEventListener('load', async () => {
         orbitControls.enableRotate = false;
         orbitControls.update();
 
-        const gui = new dat.GUI();
         const stats = new Stats();
         container.appendChild(stats.dom);
-        createPanel();
     }
 
     // Function to initialise 3d World
