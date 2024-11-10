@@ -3,16 +3,21 @@ import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/j
 // import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.module.min.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener('load', async () => {
         // Delta Time variable to update animations smoothly
         const clock = new THREE.Clock();
 
         // Variables for scene, camera, lights models, controls, character, characterAnimationClips
         let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
-            character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight, stats, panel;
+            character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight, stats;
+
+        let theta = 0;
+        let phi = 0;
+        const radius = 300; // Adjust radius based on your scene
 
         const crossFadeControls = [];
+        let panel;
         let panelSettings;
         const allActions = [];
         const baseActions = {
@@ -26,15 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
             agree: { weight: 0 },
             headShake: { weight: 0 }
         };
-
-        function modifyTimeScale(speed) {
-
-            mixer.timeScale = speed;
-
-        }
-        let theta = 0;
-        let phi = 0;
-        const radius = 300; // Adjust radius based on your scene
 
         // Character Animation Model
         var charAnimationsObj = {
@@ -148,6 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        function modifyTimeScale(speed) {
+
+            mixer.timeScale = speed;
+
+        }
 
         function createPanel() {
             const folder1 = panel.addFolder('Base Actions');
@@ -252,11 +253,13 @@ document.addEventListener('DOMContentLoaded', () => {
             orbitControls.enableRotate = false;
             orbitControls.update();
 
+            // const gui = new dat.GUI();
             panel = new dat.GUI({ width: 310 });
-            document.body.appendChild(panel.domElement);
+
             const stats = new Stats();
-            container.appendChild(stats.dom);
+            document.body.appendChild(stats.dom);
             createPanel();
+            document.body.appendChild(panel.domElement);
         }
 
         // Function to initialise 3d World
@@ -449,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('mouseup', (e) => {
             PlayNextAnimation(charAnimationsObj.idle);
         });
-    })
+
+    });
 });
 
