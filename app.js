@@ -3,8 +3,8 @@ import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/j
 // import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.module.min.js';
 
-document.addEventListener("DOMContentLoaded", () => {
-    window.addEventListener('load', async () => {
+// document.addEventListener("DOMContentLoaded", () => {
+//     window.addEventListener('load', async () => {
         // Delta Time variable to update animations smoothly
         const clock = new THREE.Clock();
 
@@ -453,6 +453,6 @@ document.addEventListener("DOMContentLoaded", () => {
             PlayNextAnimation(charAnimationsObj.idle);
         });
 
-    });
-});
+//     });
+// });
 
