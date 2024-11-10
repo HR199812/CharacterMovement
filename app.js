@@ -8,7 +8,24 @@ const clock = new THREE.Clock();
 
 // Variables for scene, camera, lights models, controls, character, characterAnimationClips
 let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
-    character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight;
+    character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight, stats, panelSettings;
+
+let theta = 0;
+let phi = 0;
+const radius = 300; // Adjust radius based on your scene
+const crossFadeControls = [];
+const allActions = [];
+const baseActions = {
+    idle: { weight: 1 },
+    walk: { weight: 0 },
+    run: { weight: 0 }
+};
+const additiveActions = {
+    sneak_pose: { weight: 0 },
+    sad_pose: { weight: 0 },
+    agree: { weight: 0 },
+    headShake: { weight: 0 }
+};
 
 // Character Animation Model
 var charAnimationsObj = {
@@ -20,6 +37,15 @@ var charAnimationsObj = {
     idle: null,
     crouch: null,
     wave: null
+};
+
+const keyStates = {
+    w: false,
+    a: false,
+    s: false,
+    d: false,
+    shift: false,
+    control: false
 };
 
 // Array To store models name for referencing in various calls
@@ -51,9 +77,9 @@ async function loadModels() {
         });
 
 
-        skeleton = new THREE.SkeletonHelper(fbx);
-        skeleton.visible = true;
-        scene.add(skeleton);
+        // skeleton = new THREE.SkeletonHelper(fbx);
+        // skeleton.visible = true;
+        // scene.add(skeleton);
 
 
         character.load('Idle.fbx', function (anim) {
@@ -113,6 +139,95 @@ function loadNextAnimation() {
     }
 }
 
+function modifyTimeScale( speed ) {
+
+    mixer.timeScale = speed;
+
+}
+
+function createPanel() {
+
+    const panel = new dat.GUI({ width: 310 });
+
+    const folder1 = panel.addFolder('Base Actions');
+    const folder2 = panel.addFolder('Additive Action Weights');
+    const folder3 = panel.addFolder('General Speed');
+
+    panelSettings = {
+        'modify time scale': 1.0
+    };
+
+    const baseNames = ['None', ...Object.keys(baseActions)];
+
+    for (let i = 0, l = baseNames.length; i !== l; ++i) {
+
+        const name = baseNames[i];
+        const settings = baseActions[name];
+        panelSettings[name] = function () {
+
+            const currentSettings = baseActions[currentBaseAction];
+            const currentAction = currentSettings ? currentSettings.action : null;
+            const action = settings ? settings.action : null;
+
+            if (currentAction !== action) {
+
+                prepareCrossFade(currentAction, action, 0.35);
+
+            }
+
+        };
+
+        crossFadeControls.push(folder1.add(panelSettings, name));
+
+    }
+
+    for (const name of Object.keys(additiveActions)) {
+
+        const settings = additiveActions[name];
+
+        panelSettings[name] = settings.weight;
+        folder2.add(panelSettings, name, 0.0, 1.0, 0.01).listen().onChange(function (weight) {
+
+            setWeight(settings.action, weight);
+            settings.weight = weight;
+
+        });
+
+    }
+
+    folder3.add(panelSettings, 'modify time scale', 0.0, 1.5, 0.01).onChange(modifyTimeScale);
+
+    folder1.open();
+    folder2.open();
+    folder3.open();
+
+    crossFadeControls.forEach(function (control) {
+
+        control.setInactive = function () {
+
+            control.domElement.classList.add('control-inactive');
+
+        };
+
+        control.setActive = function () {
+
+            control.domElement.classList.remove('control-inactive');
+
+        };
+
+        const settings = baseActions[control.property];
+
+        if (!settings || !settings.weight) {
+
+            control.setInactive();
+
+        }
+
+    });
+
+}
+
+
 // Function to render the 3d World
 function initRenderer() {
 
@@ -123,18 +238,25 @@ function initRenderer() {
     renderer.toneMappingExposure = 2.3;
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    const container = document.getElementById('container');
+    container.appendChild(renderer.domElement);
 
     orbitControls = new OrbitControls(camera, renderer.domElement);
     orbitControls.enableDamping = true;
     orbitControls.enableZoom = true;
     orbitControls.zoomSpeed = 1.15;
     orbitControls.screenSpacePanning = false;
-    orbitControls.minDistance = 0;
-    orbitControls.maxDistance = 45000;
+    orbitControls.minDistance = 300;
+    orbitControls.maxDistance = 450;
     orbitControls.minPolarAngle = -Math.PI / 1.5;
     orbitControls.maxPolarAngle = Math.PI / 2.5;
+    orbitControls.enableRotate = false;
     orbitControls.update();
+
+    const gui = new dat.GUI();
+    const stats = new Stats();
+    container.appendChild(stats.dom);
+    createPanel();
 }
 
 // Function to initialise 3d World
@@ -144,7 +266,7 @@ function initScene() {
     scene.background = new THREE.Color(0xbfd1e5);
     scene.fog = new THREE.FogExp2(0xbfd1e5, 0.0015);
 
-    camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 2000);
     camera.position.set(-180, 250, -150);
 
     dirlight = new THREE.DirectionalLight(0xd3d3d3, 1);
@@ -194,17 +316,16 @@ function initScene() {
 // Animate each and every frame with each and every change
 function animate() {
 
-    // mixer.forEach((mixer) => {
-
-    //     mixer.update(clock.getDelta());
-    // });
+    if (stats) stats.begin();
 
     if (mixer) mixer.update(clock.getDelta());
 
-    requestAnimationFrame(animate);
-
     orbitControls.update();
     renderer.render(scene, camera);
+
+    if (stats) stats.end();
+
+    requestAnimationFrame(animate);
 }
 
 // Called when window is resized and update the view with window size
@@ -217,14 +338,14 @@ function onWindowResize() {
 
 // Swtich from Previous to Next Animation
 function PlayNextAnimation(param) {
-
+    console.log('oaram', param);
     prevAction.weight = 0.5;
     prevAction.fadeOut(1);
 
     param.weight = 1;
     param.fadeIn(0);
     prevAction.crossFadeTo(param, .5);
-    
+
     mixer.stopAllAction();
     // console.log(skeleton['bones']);
 
@@ -235,17 +356,42 @@ function PlayNextAnimation(param) {
 
 }
 
-// Keyboard Key Click/Release Events
-window.addEventListener('keydown', (e) => {
-
-
+window.addEventListener('keyup', (e) => {
     if (e.key === 'w') {
-        if (rotationCheck === 360) {
-            characterRotation.rotation.y = -360;
+        keyStates.w = false;
+        PlayNextAnimation(charAnimationsObj.idle); // Stop moving if 'W' is released
+    }
+    if (e.key === 'Shift') {
+        keyStates.shift = false;
+
+        // If 'W' is still pressed, revert to walking animation
+        if (keyStates.w) {
             PlayNextAnimation(charAnimationsObj.walk);
         }
-        else PlayNextAnimation(charAnimationsObj.walk);
     }
+})
+// Keyboard Key Click/Release Events
+window.addEventListener('keydown', (e) => {
+    console.log(e.key);
+    if (e.key === 'w' && !keyStates.w) {
+        keyStates.w = true;
+
+        // If both 'W' and 'Shift' are pressed, trigger running animation
+        if (keyStates.shift) {
+            PlayNextAnimation(charAnimationsObj.run);
+        } else {
+            PlayNextAnimation(charAnimationsObj.walk); // Otherwise, trigger walking animation
+        }
+    }
+    if (e.key === 'Shift') {
+        keyStates.shift = true;
+
+        // If 'W' is also pressed, trigger running animation
+        if (keyStates.w) {
+            PlayNextAnimation(charAnimationsObj.run);
+        }
+    }
+
     if (e.key === 's') {
         // Character rotation to be implemented
         rotationCheck = characterRotation.rotation.y = 360;
@@ -265,20 +411,31 @@ window.addEventListener('keydown', (e) => {
         PlayNextAnimation(charAnimationsObj.jump);
     }
     // if (e.key === 'Shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
-    if (e.key === 'Shift') {
-        PlayNextAnimation(charAnimationsObj.run);
-    }
+    // if (e.key === 'Shift' && !keyStates.shift && keyStates.w) {
+    //     keyStates.shift = true;
+    //     PlayNextAnimation(charAnimationsObj.run);
+    // }
     if (e.key === 'Control') {
         PlayNextAnimation(charAnimationsObj.crouch);
     }
 });
-// window.addEventListener('keyup', (e) => {
-//     if (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd') {
 
-//     }
-//     if (e.key === 'q') {
-//     }
-// });
+// Add `mousemove` event to track movement
+document.addEventListener('mousemove', (event) => {
+    theta = (event.clientX / window.innerWidth) * 2 * Math.PI;
+    phi = (event.clientY / window.innerHeight) * Math.PI;
+
+    // Clamp phi to avoid flipping issues
+    phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+
+    // Calculate new camera position
+    camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+    camera.position.y = radius * Math.cos(phi);
+    camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+
+    camera.lookAt(0, 0, 0); // Adjust if your scene center differs
+    orbitControls.update();
+});
 
 // Mouse Click/Release Events
 window.addEventListener('mousedown', (e) => {
@@ -289,5 +446,6 @@ window.addEventListener('mousedown', (e) => {
         PlayNextAnimation(charAnimationsObj.block);
     }
 });
-// window.addEventListener('mouseup', (e) => {
-// });
+window.addEventListener('mouseup', (e) => {
+    PlayNextAnimation(charAnimationsObj.idle);
+});
