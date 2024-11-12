@@ -10,7 +10,7 @@ const clock = new THREE.Clock();
 
 // Variables for scene, camera, lights models, controls, character, characterAnimationClips
 let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
-    character, characterRotation, rotationCheck, actions = [], mixer, prevAction, hemiLight, dirlight, ambientLight, stats;
+    character, characterRotation, rotationCheck, actions = [], mixer, prevAction, currentAction, hemiLight, dirlight, ambientLight, stats;
 
 let theta = 0;
 let phi = 0;
@@ -19,29 +19,22 @@ const radius = 300; // Adjust radius based on your scene
 const crossFadeControls = [];
 let panel;
 let panelSettings;
-const allActions = [];
 const baseActions = {
     idle: { weight: 1 },
     walk: { weight: 0 },
     run: { weight: 0 }
 };
 const additiveActions = {
-    sneak_pose: { weight: 0 },
-    sad_pose: { weight: 0 },
-    agree: { weight: 0 },
-    headShake: { weight: 0 }
+    dance: { weight: 0 },
+    box: { weight: 0 },
+    block: { weight: 0 },
+    crouch: { weight: 0 },
+    wave: { weight: 0 }
 };
 
 // Character Animation Model
 var charAnimationsObj = {
-    dance: null,
-    box: null,
-    block: null,
-    walk: null,
-    run: null,
-    idle: null,
-    crouch: null,
-    wave: null
+    test: null
 };
 
 const keyStates = {
@@ -73,61 +66,50 @@ async function loadModels() {
 
     character.load('Idle.fbx', (fbx) => {
         characterRotation = fbx;
-
+        scene.add(fbx);
         // Initialize the animation mixer with the Idle animation
-        mixer = new THREE.AnimationMixer(fbx);
 
         // Set shadows
         fbx.traverse((c) => {
             c.castShadow = true;
             c.receiveShadow = false;
         });
-
-        // Play Idle animation
-        const idleAction = mixer.clipAction(fbx.animations[0]);
-        idleAction.play();
-        prevAction = idleAction;
-
-        actions.push({ anim: fbx, mixer });
-
+        mixer = new THREE.AnimationMixer(fbx);
         // Load additional animations
         loadNextAnimation();
 
         // Add the model to the scene after setting up the animations
-        scene.add(fbx);
+
     });
 }
-
+console.log('charAnimationsObj', charAnimationsObj)
 // Function to load all the animations of the character
 function loadNextAnimation() {
 
-    for (let i = 0; i < animationModels.length; i++) {
+    animationModels.forEach((animName, index) => {
+        character.load(`${animName}.fbx`, (anim) => {
+            console.log('animName', animName)
+            const clip = anim.animations[0];
+            const action = mixer.clipAction(clip);
+            let key = animName.replace(/\s+/g, '').toLowerCase();
+            charAnimationsObj[key] = action;
 
-        character.load(`${animationModels[i]}.fbx`, function (anim) {
-
-
-            mixer.clipAction(anim.animations[0]);
-
-            if (animationModels[i] === 'Boxing') charAnimationsObj.box = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Block') charAnimationsObj.block = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Standing to Crouch') charAnimationsObj.crouch = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Silly Dancing') charAnimationsObj.dance = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Walking') charAnimationsObj.walk = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Jump') charAnimationsObj.jump = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Running') charAnimationsObj.run = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Waving') charAnimationsObj.wave = mixer.clipAction(anim.animations[0]);
-            else if (animationModels[i] === 'Idle') charAnimationsObj.idle = mixer.clipAction(anim.animations[0]);
-            actions.push(anim);
-
-            anim.traverse(function (child) {
-
+            // Set shadows and add to scene if required
+            anim.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = false;
                 }
             });
+
+            if (index === animationModels.length - 1) {
+                // Trigger the idle state after all animations are loaded
+                charAnimationsObj.idle.play();
+                prevAction = charAnimationsObj.idle;
+                currentAction = charAnimationsObj.idle;
+            }
         });
-    }
+    });
 }
 
 function modifyTimeScale(speed) {
@@ -313,7 +295,6 @@ function animate() {
     renderer.render(scene, camera);
 
     if (stats) stats.end();
-
     requestAnimationFrame(animate);
 }
 
@@ -325,23 +306,138 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function activateAction(action) {
+
+    const clip = action.getClip();
+    const settings = baseActions[clip.name] || additiveActions[clip.name];
+    setWeight(action, settings.weight);
+    action.play();
+
+}
+
+function prepareCrossFade(startAction, endAction, duration) {
+
+    // If the current action is 'idle', execute the crossfade immediately;
+    // else wait until the current action has finished its current loop
+
+    if (currentBaseAction === 'idle' || !startAction || !endAction) {
+
+        executeCrossFade(startAction, endAction, duration);
+
+    } else {
+
+        synchronizeCrossFade(startAction, endAction, duration);
+
+    }
+
+    // Update control colors
+
+    if (endAction) {
+
+        const clip = endAction.getClip();
+        currentBaseAction = clip.name;
+
+    } else {
+
+        currentBaseAction = 'None';
+
+    }
+
+    crossFadeControls.forEach(function (control) {
+
+        const name = control.property;
+
+        if (name === currentBaseAction) {
+
+            control.setActive();
+
+        } else {
+
+            control.setInactive();
+
+        }
+
+    });
+
+}
+
+function synchronizeCrossFade(startAction, endAction, duration) {
+
+    mixer.addEventListener('loop', onLoopFinished);
+
+    function onLoopFinished(event) {
+
+        if (event.action === startAction) {
+
+            mixer.removeEventListener('loop', onLoopFinished);
+
+            executeCrossFade(startAction, endAction, duration);
+
+        }
+
+    }
+
+}
+
+function executeCrossFade(startAction, endAction, duration) {
+
+    // Not only the start action, but also the end action must get a weight of 1 before fading
+    // (concerning the start action this is already guaranteed in this place)
+
+    if (endAction) {
+
+        setWeight(endAction, 1);
+        endAction.time = 0;
+
+        if (startAction) {
+
+            // Crossfade with warping
+
+            startAction.crossFadeTo(endAction, duration, true);
+
+        } else {
+
+            // Fade in
+
+            endAction.fadeIn(duration);
+
+        }
+
+    } else {
+
+        // Fade out
+
+        startAction.fadeOut(duration);
+
+    }
+
+}
+
+// This function is needed, since animationAction.crossFadeTo() disables its start action and sets
+// the start action's timeScale to ((start animation's duration) / (end animation's duration))
+
+function setWeight(action, weight) {
+
+    action.enabled = true;
+    action.setEffectiveTimeScale(1);
+    action.setEffectiveWeight(weight);
+
+}
+
 // Swtich from Previous to Next Animation
 function PlayNextAnimation(param) {
-    console.log('oaram', param);
-    prevAction.weight = 0.5;
-    prevAction.fadeOut(1);
 
-    param.weight = 1;
-    param.fadeIn(0);
-    prevAction.crossFadeTo(param, .5);
+    setWeight(prevAction, 0);
+    prevAction.fadeOut(0);
+    prevAction = currentAction;
+    currentAction = param;
 
-    mixer.stopAllAction();
-    // console.log(skeleton['bones']);
+    setWeight(currentAction, 1);
+    currentAction.fadeIn(0);
+    prevAction.crossFadeTo(currentAction, .5);
 
+    currentAction.play();
 
-    param.play();
-
-    prevAction = param;
 
 }
 
@@ -355,7 +451,7 @@ window.addEventListener('keyup', (e) => {
 
         // If 'W' is still pressed, revert to walking animation
         if (keyStates.w) {
-            PlayNextAnimation(charAnimationsObj.walk);
+            PlayNextAnimation(charAnimationsObj.walking);
         }
     }
 })
@@ -367,9 +463,9 @@ window.addEventListener('keydown', (e) => {
 
         // If both 'W' and 'Shift' are pressed, trigger running animation
         if (keyStates.shift) {
-            PlayNextAnimation(charAnimationsObj.run);
+            PlayNextAnimation(charAnimationsObj.running);
         } else {
-            PlayNextAnimation(charAnimationsObj.walk); // Otherwise, trigger walking animation
+            PlayNextAnimation(charAnimationsObj.walking); // Otherwise, trigger walking animation
         }
     }
     if (e.key === 'Shift') {
@@ -377,7 +473,7 @@ window.addEventListener('keydown', (e) => {
 
         // If 'W' is also pressed, trigger running animation
         if (keyStates.w) {
-            PlayNextAnimation(charAnimationsObj.run);
+            PlayNextAnimation(charAnimationsObj.running);
         }
     }
 
@@ -385,27 +481,22 @@ window.addEventListener('keydown', (e) => {
         // Character rotation to be implemented
         rotationCheck = characterRotation.rotation.y = 360;
 
-        PlayNextAnimation(charAnimationsObj.walk);
+        PlayNextAnimation(charAnimationsObj.walking);
     }
     if (e.key === 'q') {
-        PlayNextAnimation(charAnimationsObj.dance);
+        PlayNextAnimation(charAnimationsObj.sillydancing);
     }
     if (e.key === 'e') {
         PlayNextAnimation(charAnimationsObj.idle);
     }
     if (e.key === 'c') {
-        PlayNextAnimation(charAnimationsObj.wave);
+        PlayNextAnimation(charAnimationsObj.waving);
     }
     if (e.key === ' ') {
         PlayNextAnimation(charAnimationsObj.jump);
     }
-    // if (e.key === 'Shift' && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
-    // if (e.key === 'Shift' && !keyStates.shift && keyStates.w) {
-    //     keyStates.shift = true;
-    //     PlayNextAnimation(charAnimationsObj.run);
-    // }
     if (e.key === 'Control') {
-        PlayNextAnimation(charAnimationsObj.crouch);
+        PlayNextAnimation(charAnimationsObj.standingtocrouch);
     }
 });
 
@@ -429,7 +520,7 @@ document.addEventListener('mousemove', (event) => {
 // Mouse Click/Release Events
 window.addEventListener('mousedown', (e) => {
     if (e.button === 0) {
-        PlayNextAnimation(charAnimationsObj.box);
+        PlayNextAnimation(charAnimationsObj.boxing);
     }
     else if (e.button === 2) {
         PlayNextAnimation(charAnimationsObj.block);
@@ -438,4 +529,3 @@ window.addEventListener('mousedown', (e) => {
 window.addEventListener('mouseup', (e) => {
     PlayNextAnimation(charAnimationsObj.idle);
 });
-
