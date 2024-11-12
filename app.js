@@ -9,13 +9,13 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 const clock = new THREE.Clock();
 
 // Variables for scene, camera, lights models, controls, character, characterAnimationClips
-let camera, scene, renderer, skeleton, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
-    character, characterRotation, rotationCheck, actions = [], mixer, prevAction, currentAction, hemiLight, dirlight, ambientLight, stats;
+let camera, scene, renderer, orbitControls, cameraTRBL = 100, cameraMapSize = 2048, cameraNear = 0.5,
+    character, characterRotation, mixer, prevAction, currentAction, hemiLight, dirlight, ambientLight, stats;
 
 let theta = 0;
 let phi = 0;
 const radius = 300; // Adjust radius based on your scene
-
+const currentBaseAction = 'idle';
 const crossFadeControls = [];
 let panel;
 let panelSettings;
@@ -43,7 +43,8 @@ const keyStates = {
     s: false,
     d: false,
     shift: false,
-    control: false
+    control: false,
+    space: false
 };
 
 // Array To store models name for referencing in various calls
@@ -126,7 +127,7 @@ function createPanel() {
         'modify time scale': 1.0
     };
 
-    const baseNames = ['None', ...Object.keys(baseActions)];
+    const baseNames = ['None', ...Object.keys(charAnimationsObj)];
 
     for (let i = 0, l = baseNames.length; i !== l; ++i) {
 
@@ -211,9 +212,10 @@ function initRenderer() {
 
     orbitControls = new OrbitControls(camera, renderer.domElement);
     orbitControls.enableDamping = true;
+    orbitControls.enablePan = false;
     orbitControls.enableZoom = true;
     orbitControls.zoomSpeed = 1.15;
-    orbitControls.screenSpacePanning = false;
+    orbitControls.screenSpacePanning = true;
     orbitControls.minDistance = 300;
     orbitControls.maxDistance = 450;
     orbitControls.minPolarAngle = -Math.PI / 1.5;
@@ -428,12 +430,12 @@ function setWeight(action, weight) {
 function PlayNextAnimation(param) {
 
     setWeight(prevAction, 0);
-    prevAction.fadeOut(0);
+    prevAction.fadeOut(0.35);
     prevAction = currentAction;
     currentAction = param;
 
     setWeight(currentAction, 1);
-    currentAction.fadeIn(0);
+    currentAction.fadeIn(0.5);
     prevAction.crossFadeTo(currentAction, .5);
 
     currentAction.play();
@@ -454,10 +456,13 @@ window.addEventListener('keyup', (e) => {
             PlayNextAnimation(charAnimationsObj.walking);
         }
     }
+    if (e.key === ' ') {
+        keyStates.space = false;
+        PlayNextAnimation(charAnimationsObj.idle);
+    }
 })
 // Keyboard Key Click/Release Events
 window.addEventListener('keydown', (e) => {
-    console.log(e.key);
     if (e.key === 'w' && !keyStates.w) {
         keyStates.w = true;
 
@@ -477,25 +482,31 @@ window.addEventListener('keydown', (e) => {
         }
     }
 
-    if (e.key === 's') {
+    if (e.key === 's' && !keyStates.c) {
+        keyStates.s = true;
         // Character rotation to be implemented
         rotationCheck = characterRotation.rotation.y = 360;
 
         PlayNextAnimation(charAnimationsObj.walking);
     }
-    if (e.key === 'q') {
+    if (e.key === 'q' && !keyStates.q) {
+        keyStates.q = true;
         PlayNextAnimation(charAnimationsObj.sillydancing);
     }
-    if (e.key === 'e') {
+    if (e.key === 'e' && !keyStates.e) {
+        keyStates.e = true;
         PlayNextAnimation(charAnimationsObj.idle);
     }
-    if (e.key === 'c') {
+    if (e.key === 'c' && !keyStates.c) {
+        keyStates.c = true;
         PlayNextAnimation(charAnimationsObj.waving);
     }
-    if (e.key === ' ') {
+    if (e.key === ' ' && !keyStates.space) {
+        keyStates.space = true;
         PlayNextAnimation(charAnimationsObj.jump);
     }
-    if (e.key === 'Control') {
+    if (e.key === 'Control' && !keyStates.control) {
+        keyStates.space = control;
         PlayNextAnimation(charAnimationsObj.standingtocrouch);
     }
 });
@@ -517,15 +528,15 @@ document.addEventListener('mousemove', (event) => {
     orbitControls.update();
 });
 
-// Mouse Click/Release Events
-window.addEventListener('mousedown', (e) => {
-    if (e.button === 0) {
-        PlayNextAnimation(charAnimationsObj.boxing);
-    }
-    else if (e.button === 2) {
-        PlayNextAnimation(charAnimationsObj.block);
-    }
-});
-window.addEventListener('mouseup', (e) => {
-    PlayNextAnimation(charAnimationsObj.idle);
-});
+// // Mouse Click/Release Events
+// window.addEventListener('mousedown', (e) => {
+//     if (e.button === 0) {
+//         PlayNextAnimation(charAnimationsObj.boxing);
+//     }
+//     else if (e.button === 2) {
+//         PlayNextAnimation(charAnimationsObj.block);
+//     }
+// });
+// window.addEventListener('mouseup', (e) => {
+//     PlayNextAnimation(charAnimationsObj.idle);
+// });
