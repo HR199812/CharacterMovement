@@ -1,7 +1,9 @@
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
-import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
-// import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
-import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.module.min.js';
+import * as THREE from 'three';
+
+import Stats from 'three/addons/libs/stats.module.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 // Delta Time variable to update animations smoothly
 const clock = new THREE.Clock();
@@ -68,51 +70,37 @@ async function loadModels() {
     character = new FBXLoader();
 
     character.setPath(resourcePath);
-    character.load('ybot.fbx', (fbx) => {
 
+    character.load('Idle.fbx', (fbx) => {
         characterRotation = fbx;
 
+        // Initialize the animation mixer with the Idle animation
         mixer = new THREE.AnimationMixer(fbx);
 
-        fbx.traverse(c => {
+        // Set shadows
+        fbx.traverse((c) => {
             c.castShadow = true;
             c.receiveShadow = false;
         });
 
+        // Play Idle animation
+        const idleAction = mixer.clipAction(fbx.animations[0]);
+        idleAction.play();
+        prevAction = idleAction;
 
-        // skeleton = new THREE.SkeletonHelper(fbx);
-        // skeleton.visible = true;
-        // scene.add(skeleton);
+        actions.push({ anim: fbx, mixer });
 
-
-        character.load('Idle.fbx', function (anim) {
-
-            mixer.clipAction(anim.animations[0]).play();
-            prevAction = mixer.clipAction(anim.animations[0]);
-
-            actions.push({ anim, mixer });
-
-
-            anim.traverse(function (child) {
-
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = false;
-                }
-            });
-        });
-
-
+        // Load additional animations
         loadNextAnimation();
 
-
+        // Add the model to the scene after setting up the animations
         scene.add(fbx);
-
     });
 }
 
 // Function to load all the animations of the character
 function loadNextAnimation() {
+
     for (let i = 0; i < animationModels.length; i++) {
 
         character.load(`${animationModels[i]}.fbx`, function (anim) {
@@ -252,7 +240,7 @@ function initRenderer() {
     orbitControls.update();
 
     // const gui = new dat.GUI();
-    panel = new dat.GUI({ width: 310 });
+    panel = new GUI({ width: 310 });
 
     const stats = new Stats();
     document.body.appendChild(stats.dom);
@@ -298,7 +286,7 @@ function initScene() {
 
 
     // Ground
-    const mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(15000, 15000),
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(15000, 15000),
         new THREE.MeshPhongMaterial({ color: 0xFFFFFF, wireframe: false, depthWrite: false }));
     mesh.rotation.x = - Math.PI / 2;
     mesh.receiveShadow = true;
